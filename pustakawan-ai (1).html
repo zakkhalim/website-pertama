@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pustakawan AI — Katalog Perpustakaan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;0,700;1,500&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16241D;
+    --forest:#24402F;
+    --forest-deep:#152218;
+    --forest-mid:#2F4F3B;
+    --brass:#B98A3D;
+    --brass-light:#D9B876;
+    --brass-dim:#8C6A31;
+    --card:#EFE3C0;
+    --card-shadow:#c9b98c;
+    --paper:#FAF6E9;
+    --oxblood:#8B3A3A;
+    --oxblood-deep:#5E2626;
+    --sage:#5E7C55;
+    --sage-deep:#3C5233;
+    --muted:#5b5340;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(185,138,61,0.08), transparent 45%),
+      var(--forest-deep);
+    background-attachment:fixed;
+    color:var(--paper);
+    font-family:'Source Sans 3', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 90px;}
+
+  /* Header — drawer front */
+  header{
+    background:linear-gradient(180deg, var(--forest) 0%, var(--forest-mid) 100%);
+    border:1px solid #3c5c46;
+    border-radius:10px;
+    padding:26px 30px;
+    position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,0.35);
+    overflow:hidden;
+  }
+  header::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px solid rgba(217,184,118,0.25);
+    border-radius:5px;
+    pointer-events:none;
+  }
+  .drawer-label{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    background:var(--brass);
+    color:var(--forest-deep);
+    padding:5px 14px 6px;
+    border-radius:3px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:clamp(30px,4.4vw,44px);
+    margin:0 0 6px;
+    letter-spacing:0.01em;
+    color:var(--paper);
+  }
+  header p.sub{
+    margin:0 0 22px;
+    color:#cfe0d1;
+    font-size:15px;
+    max-width:60ch;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  #searchInput{
+    flex:1 1 320px;
+    background:var(--paper);
+    border:1px solid var(--brass-dim);
+    color:var(--ink);
+    padding:13px 16px;
+    border-radius:6px;
+    font-size:15px;
+    font-family:'Source Sans 3', sans-serif;
+    outline:none;
+  }
+  #searchInput::placeholder{color:#8a8265;}
+  #searchInput:focus{border-color:var(--brass-light); box-shadow:0 0 0 3px rgba(217,184,118,0.25);}
+  .result-count{
+    align-self:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--brass-light);
+    letter-spacing:0.04em;
+    white-space:nowrap;
+  }
+  .tambah-btn{
+    flex:0 0 auto;
+    background:var(--brass);
+    color:var(--forest-deep);
+    border:none;
+    padding:0 20px;
+    border-radius:6px;
+    font-family:'Source Sans 3', sans-serif;
+    font-weight:600;
+    font-size:14px;
+    cursor:pointer;
+  }
+  .tambah-btn:hover{background:var(--brass-light);}
+
+  /* Genre guide tabs */
+  .chips{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:20px 0 6px;
+  }
+  .chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:0.03em;
+    padding:7px 13px;
+    border-radius:3px 3px 0 0;
+    background:rgba(250,246,233,0.06);
+    border:1px solid rgba(217,184,118,0.3);
+    border-bottom:2px solid var(--brass-dim);
+    color:#d9d3b8;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .chip:hover{background:rgba(217,184,118,0.15); color:var(--paper);}
+  .chip.active{
+    background:var(--brass);
+    color:var(--forest-deep);
+    border-color:var(--brass);
+    font-weight:600;
+  }
+
+  /* Grid of catalog cards */
+  .grid{
+    margin-top:22px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(266px, 1fr));
+    gap:22px;
+  }
+  .no-result{
+    grid-column:1/-1;
+    text-align:center;
+    padding:50px 20px;
+    color:#cfe0d1;
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:18px;
+  }
+
+  .kartu{
+    position:relative;
+    background:var(--card);
+    color:var(--ink);
+    border-radius:4px 4px 8px 8px;
+    padding:26px 18px 18px;
+    cursor:pointer;
+    box-shadow:0 6px 0 -1px var(--card-shadow), 0 10px 18px rgba(0,0,0,0.28);
+    transition:transform .15s ease, box-shadow .15s ease;
+    display:flex;
+    flex-direction:column;
+    min-height:220px;
+  }
+  .kartu:hover{
+    transform:translateY(-4px);
+    box-shadow:0 9px 0 -1px var(--card-shadow), 0 16px 22px rgba(0,0,0,0.32);
+  }
+  .lubang{
+    position:absolute;
+    top:9px;
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:var(--forest-deep);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .lubang.l{left:20px;}
+  .lubang.r{right:20px;}
+  .garis-panduan{
+    border-bottom:1px dashed var(--brass-dim);
+    padding-bottom:10px;
+    margin-bottom:10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .no-panggil{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color:var(--brass-dim);
+    white-space:nowrap;
+    padding-top:2px;
+  }
+  .judul-buku{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:19px;
+    line-height:1.25;
+    margin:0;
+  }
+  .penulis{
+    font-size:13px;
+    color:var(--muted);
+    margin:4px 0 0;
+    font-style:italic;
+  }
+  .meta-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 10px;
+    margin:12px 0 10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .meta-row span{white-space:nowrap;}
+  .sinopsis-ringkas{
+    font-size:13px;
+    line-height:1.5;
+    color:#3a3626;
+    flex:1;
+    margin:0 0 14px;
+  }
+  .kartu-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:auto;
+  }
+  .lokasi-badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    background:var(--forest);
+    color:var(--brass-light);
+    padding:5px 9px;
+    border-radius:3px;
+  }
+  .stempel{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:4px 10px;
+    border:2px solid;
+    border-radius:3px;
+    transform:rotate(-6deg);
+    mix-blend-mode:multiply;
+    opacity:0.88;
+  }
+  .stempel.tersedia{color:var(--sage-deep); border-color:var(--sage-deep);}
+  .stempel.dipinjam{color:var(--oxblood-deep); border-color:var(--oxblood-deep);}
+
+  /* Modal detail */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(10,16,12,0.72);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:5vh 16px;
+    overflow-y:auto;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .detail-kartu{
+    background:var(--card);
+    color:var(--ink);
+    max-width:640px;
+    width:100%;
+    border-radius:6px 6px 12px 12px;
+    padding:34px 30px 28px;
+    position:relative;
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  .tutup-btn{
+    position:absolute;
+    top:16px; right:16px;
+    background:var(--forest);
+    color:var(--brass-light);
+    border:none;
+    width:30px; height:30px;
+    border-radius:50%;
+    font-size:16px;
+    cursor:pointer;
+    line-height:1;
+  }
+  .detail-kartu .lubang{top:12px;}
+  .detail-top{
+    border-bottom:1px dashed var(--brass-dim);
+    padding-bottom:14px;
+    margin:6px 0 16px;
+  }
+  .detail-kartu .no-panggil{font-size:12px; margin-bottom:8px; display:block;}
+  .detail-kartu h2{
+    font-family:'Fraunces', serif;
+    font-size:27px;
+    margin:0 0 4px;
+  }
+  .detail-kartu .penulis{font-size:14px;}
+  .detail-meta{
+    display:flex; flex-wrap:wrap; gap:8px 18px;
+    font-size:13px; color:var(--muted); margin-top:10px;
+  }
+  .detail-section-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+    margin:20px 0 8px;
+  }
+  .sinopsis-full{font-size:14.5px; line-height:1.65; color:#2c2818;}
+
+  .peta{
+    display:flex; flex-direction:column-reverse; gap:6px; margin-top:6px;
+  }
+  .lantai-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 14px;
+    border-radius:4px;
+    background:rgba(36,64,47,0.08);
+    border:1px solid rgba(36,64,47,0.18);
+    font-size:13px;
+  }
+  .lantai-bar.aktif{
+    background:var(--brass);
+    color:var(--forest-deep);
+    border-color:var(--brass);
+    font-weight:600;
+  }
+  .rak-pill{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    background:var(--forest-deep);
+    color:var(--brass-light);
+    padding:3px 9px;
+    border-radius:3px;
+  }
+  .lantai-bar.aktif .rak-pill{background:var(--forest-deep); color:var(--brass-light);}
+
+  .ketersediaan-box{
+    margin-top:16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .tanya-ai-btn{
+    margin-top:20px;
+    width:100%;
+    background:var(--forest);
+    color:var(--paper);
+    border:1px solid var(--forest-mid);
+    padding:12px;
+    border-radius:5px;
+    font-family:'Source Sans 3', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .tanya-ai-btn:hover{background:var(--forest-mid);}
+
+  /* AI chat — form permintaan */
+  .ai-toggle{
+    position:fixed;
+    right:24px; bottom:24px;
+    background:var(--brass);
+    color:var(--forest-deep);
+    border:none;
+    padding:14px 20px;
+    border-radius:30px;
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:15px;
+    cursor:pointer;
+    box-shadow:0 8px 20px rgba(0,0,0,0.4);
+    z-index:40;
+  }
+  .ai-toggle:hover{background:var(--brass-light);}
+
+  .ai-panel{
+    position:fixed;
+    right:24px; bottom:24px;
+    width:min(380px, calc(100vw - 32px));
+    max-height:min(72vh, 640px);
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:8px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+    display:none;
+    flex-direction:column;
+    overflow:hidden;
+    z-index:41;
+    border:1px solid var(--brass-dim);
+  }
+  .ai-panel.show{display:flex;}
+  .ai-head{
+    background:var(--forest);
+    color:var(--paper);
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .ai-head-title{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-size:16px;
+  }
+  .ai-head-title small{
+    display:block;
+    font-family:'Source Sans 3', sans-serif;
+    font-style:normal;
+    font-size:11px;
+    color:#bcd0bd;
+    margin-top:2px;
+  }
+  .ai-head button{
+    background:none; border:none; color:var(--brass-light);
+    font-size:18px; cursor:pointer;
+  }
+  .ai-messages{
+    flex:1;
+    overflow-y:auto;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    background:
+      repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(139,58,58,0.05) 28px);
+  }
+  .msg{
+    max-width:88%;
+    padding:10px 13px;
+    border-radius:6px;
+    font-size:13.5px;
+    line-height:1.5;
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:var(--brass);
+    color:var(--forest-deep);
+  }
+  .msg.ai{
+    align-self:flex-start;
+    background:var(--card);
+    border:1px solid var(--card-shadow);
+  }
+  .msg.ai .no-panggil{display:none;}
+  .rekomendasi-list{
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .rekomendasi-item{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    background:var(--forest-deep);
+    color:var(--brass-light);
+    padding:6px 9px;
+    border-radius:3px;
+    cursor:pointer;
+  }
+  .rekomendasi-item:hover{background:var(--forest);}
+  .ai-typing{
+    align-self:flex-start;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--muted);
+    padding:6px 4px;
+  }
+  .ai-input-row{
+    display:flex;
+    gap:8px;
+    padding:12px;
+    border-top:1px solid #e2d6ae;
+    background:var(--paper);
+  }
+  .ai-input-row input{
+    flex:1;
+    border:1px solid var(--brass-dim);
+    border-radius:5px;
+    padding:10px 12px;
+    font-size:13.5px;
+    font-family:'Source Sans 3', sans-serif;
+    outline:none;
+  }
+  .ai-input-row input:focus{box-shadow:0 0 0 3px rgba(217,184,118,0.3);}
+  .ai-input-row button{
+    background:var(--forest);
+    color:var(--paper);
+    border:none;
+    padding:0 16px;
+    border-radius:5px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .ai-input-row button:disabled{opacity:0.5; cursor:default;}
+  .ai-hint{
+    font-size:11px;
+    color:var(--muted);
+    padding:0 16px 10px;
+    background:var(--paper);
+  }
+
+  /* Form tambah buku */
+  .form-kartu h2{
+    font-family:'Fraunces', serif;
+    font-size:24px;
+    margin:6px 0 4px;
+  }
+  .form-kartu .sub-form{
+    font-size:13px;
+    color:var(--muted);
+    margin:0 0 18px;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .field-row.full{grid-template-columns:1fr;}
+  .field{display:flex; flex-direction:column; gap:5px;}
+  .field label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--brass-dim);
+  }
+  .field input, .field select, .field textarea{
+    font-family:'Source Sans 3', sans-serif;
+    font-size:14px;
+    padding:9px 11px;
+    border-radius:5px;
+    border:1px solid var(--card-shadow);
+    background:var(--paper);
+    color:var(--ink);
+    outline:none;
+    width:100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{
+    border-color:var(--brass-dim);
+    box-shadow:0 0 0 3px rgba(139,106,49,0.18);
+  }
+  .field textarea{resize:vertical; min-height:70px; font-family:'Source Sans 3', sans-serif;}
+  .field-error{
+    font-size:12px;
+    color:var(--oxblood-deep);
+    display:none;
+  }
+  .field-error.show{display:block;}
+  .field.invalid input, .field.invalid select, .field.invalid textarea{
+    border-color:var(--oxblood-deep);
+  }
+  .form-actions{
+    display:flex;
+    gap:10px;
+    margin-top:6px;
+  }
+  .form-actions button{
+    flex:1;
+    padding:12px;
+    border-radius:5px;
+    font-family:'Source Sans 3', sans-serif;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid var(--forest-mid);
+  }
+  .btn-simpan{background:var(--forest); color:var(--paper);}
+  .btn-simpan:hover{background:var(--forest-mid);}
+  .btn-batal{background:transparent; color:var(--forest); border-color:var(--card-shadow);}
+  .btn-batal:hover{background:rgba(36,64,47,0.08);}
+  .form-status-msg{
+    font-size:12.5px;
+    color:var(--sage-deep);
+    margin:0 0 12px;
+    display:none;
+  }
+  .form-status-msg.show{display:block;}
+
+  @media (max-width:480px){
+    .ai-panel{right:10px; left:10px; width:auto; bottom:10px;}
+    .ai-toggle{right:16px; bottom:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="drawer-label">Katalog · Sistem Klasifikasi Lokal</div>
+    <h1>Pustakawan AI</h1>
+    <p class="sub">Cari judul, penulis, atau topik untuk menemukan buku beserta lantai dan nomor raknya. Atau tanyakan langsung pada asisten di pojok kanan bawah.</p>
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Cari judul, penulis, atau kata kunci…" autocomplete="off">
+      <button class="tambah-btn" id="tambahBukuBtn" type="button">+ Tambah Buku</button>
+      <span class="result-count" id="resultCount"></span>
+    </div>
+  </header>
+
+  <div class="chips" id="chipRow"></div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="detail-kartu" id="detailKartu"></div>
+</div>
+
+<div class="overlay" id="formOverlay">
+  <div class="detail-kartu form-kartu" id="formKartu">
+    <button class="tutup-btn" id="tutupForm" aria-label="Tutup">&times;</button>
+    <span class="lubang l"></span><span class="lubang r"></span>
+    <h2>Tambah Buku Baru</h2>
+    <p class="sub-form">Isi kartu katalog untuk menambahkan buku ke koleksi. Kolom bertanda * wajib diisi.</p>
+    <p class="form-status-msg" id="formStatusMsg">Buku berhasil ditambahkan ke katalog.</p>
+    <form id="formTambah" novalidate>
+      <div class="field-row full">
+        <div class="field" id="f-judul">
+          <label>Judul buku *</label>
+          <input type="text" id="in-judul" placeholder="Contoh: Cantik Itu Luka">
+          <span class="field-error">Judul buku wajib diisi.</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="f-penulis">
+          <label>Penulis *</label>
+          <input type="text" id="in-penulis" placeholder="Contoh: Eka Kurniawan">
+          <span class="field-error">Nama penulis wajib diisi.</span>
+        </div>
+        <div class="field" id="f-tahun">
+          <label>Tahun terbit</label>
+          <input type="number" id="in-tahun" placeholder="2024" min="0" max="2100">
+          <span class="field-error">Isi tahun yang valid.</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="f-genre">
+          <label>Genre *</label>
+          <input type="text" id="in-genre" list="genreList" placeholder="Contoh: Fiksi">
+          <datalist id="genreList"></datalist>
+          <span class="field-error">Genre wajib diisi.</span>
+        </div>
+        <div class="field" id="f-lantai">
+          <label>Lantai *</label>
+          <select id="in-lantai">
+            <option value="1">Lantai 1 — Umum & Referensi</option>
+            <option value="2">Lantai 2 — Fiksi & Sastra</option>
+            <option value="3">Lantai 3 — Sains & Teknologi</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="f-rak">
+          <label>Nomor rak *</label>
+          <input type="text" id="in-rak" placeholder="Contoh: D-07">
+          <span class="field-error">Nomor rak wajib diisi.</span>
+        </div>
+        <div class="field" id="f-call">
+          <label>Nomor panggil</label>
+          <input type="text" id="in-call" placeholder="Contoh: 899.221/KUR/c">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="f-status">
+          <label>Status *</label>
+          <select id="in-status">
+            <option value="tersedia">Tersedia</option>
+            <option value="dipinjam">Dipinjam</option>
+          </select>
+        </div>
+        <div class="field" id="f-eksemplar">
+          <label>Jumlah eksemplar</label>
+          <input type="number" id="in-eksemplar" placeholder="1" min="1" value="1">
+        </div>
+      </div>
+      <div class="field-row full">
+        <div class="field" id="f-sinopsis">
+          <label>Sinopsis</label>
+          <textarea id="in-sinopsis" placeholder="Ringkasan singkat isi buku…"></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-batal" id="batalForm">Batal</button>
+        <button type="submit" class="btn-simpan">Simpan ke Katalog</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<button class="ai-toggle" id="aiToggle">Tanya Pustakawan</button>
+
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-head">
+    <div class="ai-head-title">Pustakawan AI<small>Bertanya tentang koleksi perpustakaan</small></div>
+    <button id="aiClose" aria-label="Tutup">&times;</button>
+  </div>
+  <div class="ai-messages" id="aiMessages">
+    <div class="msg ai">Selamat datang. Tanyakan buku apa saja — misalnya "ada buku tentang sejarah dunia?" atau "di mana rak novel Pramoedya?"</div>
+  </div>
+  <div class="ai-input-row">
+    <input type="text" id="aiInput" placeholder="Tulis pertanyaan Anda…">
+    <button id="aiSend">Kirim</button>
+  </div>
+  <div class="ai-hint">Jawaban disusun dari data koleksi yang tersedia di katalog ini.</div>
+</div>
+
+<script>
+const BUKU_AWAL = [
+  {id:"b01", judul:"Laut Bercerita", penulis:"Leila S. Chudori", tahun:2017, genre:"Fiksi", lantai:2, area:"Fiksi & Sastra", rak:"C-04", callNumber:"899.221/CHU/l", status:"tersedia", eksemplar:{total:3, tersedia:2}, sinopsis:"Novel tentang aktivis mahasiswa yang hilang pada masa akhir Orde Baru, dituturkan lewat suara Laut dan adiknya Asmara, memadukan trauma sejarah dengan kehangatan keluarga."},
+  {id:"b02", judul:"Bumi Manusia", penulis:"Pramoedya Ananta Toer", tahun:1980, genre:"Sastra Klasik", lantai:2, area:"Fiksi & Sastra", rak:"B-01", callNumber:"899.221/TOE/b", status:"dipinjam", kembali:"3 September 2026", eksemplar:{total:4, tersedia:0}, sinopsis:"Kisah Minke, pemuda pribumi di masa kolonial Hindia Belanda, bagian pertama Tetralogi Buru yang mengangkat isu kolonialisme, pendidikan, dan cinta."},
+  {id:"b03", judul:"Sapiens: Riwayat Singkat Umat Manusia", penulis:"Yuval Noah Harari", tahun:2011, genre:"Non-fiksi Sejarah", lantai:1, area:"Umum & Referensi", rak:"A-09", callNumber:"909/HAR/s", status:"tersedia", eksemplar:{total:2, tersedia:1}, sinopsis:"Menelusuri perjalanan Homo sapiens dari revolusi kognitif hingga revolusi bioteknologi, membahas bagaimana mitos bersama membentuk peradaban manusia."},
+  {id:"b04", judul:"Cosmos", penulis:"Carl Sagan", tahun:1980, genre:"Sains", lantai:3, area:"Sains & Teknologi", rak:"F-02", callNumber:"520/SAG/c", status:"tersedia", eksemplar:{total:2, tersedia:2}, sinopsis:"Perjalanan puitis melintasi alam semesta, dari asal-usul bintang hingga tempat manusia dalam skema kosmos, ditulis oleh salah satu astronom paling berpengaruh."},
+  {id:"b05", judul:"Clean Code", penulis:"Robert C. Martin", tahun:2008, genre:"Teknologi", lantai:3, area:"Sains & Teknologi", rak:"G-14", callNumber:"005.1/MAR/c", status:"dipinjam", kembali:"6 September 2026", eksemplar:{total:2, tersedia:0}, sinopsis:"Panduan praktik menulis kode yang mudah dibaca dan dirawat, berisi prinsip penamaan, fungsi, dan pengujian yang menjadi rujukan banyak pengembang perangkat lunak."},
+  {id:"b06", judul:"Filosofi Teras", penulis:"Henry Manampiring", tahun:2018, genre:"Non-fiksi Filsafat", lantai:1, area:"Umum & Referensi", rak:"A-15", callNumber:"188/MAN/f", status:"tersedia", eksemplar:{total:3, tersedia:3}, sinopsis:"Pengantar filsafat Stoa yang ditulis dengan gaya ringan dan konteks Indonesia, membahas cara mengelola emosi dan menghadapi hal di luar kendali."},
+  {id:"b07", judul:"Negeri 5 Menara", penulis:"Ahmad Fuadi", tahun:2009, genre:"Fiksi", lantai:2, area:"Fiksi & Sastra", rak:"C-08", callNumber:"899.221/FUA/n", status:"tersedia", eksemplar:{total:3, tersedia:1}, sinopsis:"Kisah enam santri pondok pesantren dengan mantra 'man jadda wajada', tentang mimpi, persahabatan, dan perjuangan meraih cita-cita hingga ke luar negeri."},
+  {id:"b08", judul:"A Little History of the World", penulis:"E. H. Gombrich", tahun:1936, genre:"Non-fiksi Sejarah", lantai:1, area:"Umum & Referensi", rak:"A-03", callNumber:"909/GOM/l", status:"tersedia", eksemplar:{total:2, tersedia:2}, sinopsis:"Sejarah dunia yang disederhanakan untuk pembaca muda maupun dewasa, ditulis dengan gaya bertutur yang hangat dari zaman purba hingga abad modern."},
+  {id:"b09", judul:"Atomic Habits", penulis:"James Clear", tahun:2018, genre:"Pengembangan Diri", lantai:1, area:"Umum & Referensi", rak:"A-20", callNumber:"158.1/CLE/a", status:"dipinjam", kembali:"1 September 2026", eksemplar:{total:4, tersedia:0}, sinopsis:"Membahas bagaimana perubahan kecil dan konsisten pada kebiasaan dapat menghasilkan hasil besar, lengkap dengan kerangka praktis untuk membangun kebiasaan baik."},
+  {id:"b10", judul:"Laskar Pelangi", penulis:"Andrea Hirata", tahun:2005, genre:"Fiksi", lantai:2, area:"Fiksi & Sastra", rak:"C-11", callNumber:"899.221/HIR/l", status:"tersedia", eksemplar:{total:3, tersedia:3}, sinopsis:"Kisah sepuluh anak di Belitung yang berjuang mengenyam pendidikan di sekolah yang nyaris ambruk, penuh semangat, humor, dan haru."},
+  {id:"b11", judul:"A Brief History of Time", penulis:"Stephen Hawking", tahun:1988, genre:"Sains", lantai:3, area:"Sains & Teknologi", rak:"F-05", callNumber:"523.1/HAW/b", status:"tersedia", eksemplar:{total:2, tersedia:1}, sinopsis:"Penjelasan populer tentang kosmologi, lubang hitam, dan sifat ruang-waktu, ditulis agar dapat dipahami tanpa latar belakang fisika formal."},
+  {id:"b12", judul:"Steve Jobs", penulis:"Walter Isaacson", tahun:2011, genre:"Biografi", lantai:1, area:"Umum & Referensi", rak:"A-22", callNumber:"338.7/ISA/s", status:"tersedia", eksemplar:{total:2, tersedia:2}, sinopsis:"Biografi resmi pendiri Apple berdasarkan wawancara mendalam, mengupas obsesi terhadap desain, kepemimpinan yang keras, dan visi produk yang mengubah industri."},
+  {id:"b13", judul:"Kumpulan Dongeng Nusantara", penulis:"Anonim (Kompilasi)", tahun:2015, genre:"Anak", lantai:1, area:"Umum & Referensi", rak:"Anak-02", callNumber:"398.2/KOM/k", status:"tersedia", eksemplar:{total:5, tersedia:4}, sinopsis:"Kumpulan cerita rakyat dari berbagai daerah di Indonesia, termasuk Kancil dan Buaya, ditulis ulang dengan ilustrasi berwarna untuk pembaca cilik."},
+  {id:"b14", judul:"Pengantar Algoritma dan Struktur Data", penulis:"Tim Penulis Informatika", tahun:2016, genre:"Teknologi", lantai:3, area:"Sains & Teknologi", rak:"G-06", callNumber:"005.1/TIM/p", status:"tersedia", eksemplar:{total:3, tersedia:3}, sinopsis:"Buku ajar dasar tentang struktur data (larik, tumpukan, antrean, pohon) dan algoritma pengurutan serta pencarian, disertai contoh kode dan latihan soal."},
+  {id:"b15", judul:"Ayat-Ayat Cinta", penulis:"Habiburrahman El Shirazy", tahun:2004, genre:"Fiksi", lantai:2, area:"Fiksi & Sastra", rak:"C-15", callNumber:"899.221/ELS/a", status:"dipinjam", kembali:"5 September 2026", eksemplar:{total:3, tersedia:0}, sinopsis:"Kisah cinta dan religiusitas seorang mahasiswa Indonesia di Kairo, memadukan nilai keislaman dengan konflik cinta yang rumit."},
+  {id:"b16", judul:"Sejarah Ringkas Filsafat Barat", penulis:"Anthony Kenny (terj.)", tahun:2010, genre:"Non-fiksi Filsafat", lantai:1, area:"Umum & Referensi", rak:"A-17", callNumber:"190/KEN/s", status:"tersedia", eksemplar:{total:2, tersedia:1}, sinopsis:"Ringkasan perjalanan pemikiran filsafat Barat dari Yunani kuno hingga abad ke-20, ditulis sistematis per periode dan tokoh."}
+];
+
+const STORAGE_KEY = "pustakawan_ai_buku_tambahan";
+
+function muatBukuTambahan(){
+  try{
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(data) ? data : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function simpanBukuTambahan(){
+  const tambahan = BUKU.filter(b => b.custom);
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(tambahan)); }catch(e){}
+}
+
+let BUKU = [...BUKU_AWAL, ...muatBukuTambahan()];
+
+function namaAreaLantai(l){
+  return {1:"Umum & Referensi", 2:"Fiksi & Sastra", 3:"Sains & Teknologi"}[l] || "Koleksi Umum";
+}
+
+function buatIdBaru(){
+  let n = BUKU.length + 1;
+  let id = "c" + String(n).padStart(3,"0");
+  while(BUKU.some(b => b.id === id)){ n++; id = "c" + String(n).padStart(3,"0"); }
+  return id;
+}
+
+let genreAktif = "Semua";
+let queryAktif = "";
+
+function semuaGenre(){
+  const set = new Set(BUKU.map(b => b.genre));
+  return ["Semua", ...Array.from(set).sort()];
+}
+
+function renderChips(){
+  const row = document.getElementById('chipRow');
+  row.innerHTML = "";
+  semuaGenre().forEach(g => {
+    const el = document.createElement('div');
+    el.className = "chip" + (g === genreAktif ? " active" : "");
+    el.textContent = g;
+    el.onclick = () => { genreAktif = g; renderChips(); renderGrid(); };
+    row.appendChild(el);
+  });
+}
+
+function cocokQuery(b, q){
+  if(!q) return true;
+  const teks = (b.judul + " " + b.penulis + " " + b.genre + " " + b.sinopsis).toLowerCase();
+  return teks.includes(q.toLowerCase());
+}
+
+function bukuTersaring(){
+  return BUKU.filter(b => (genreAktif === "Semua" || b.genre === genreAktif) && cocokQuery(b, queryAktif));
+}
+
+function stempelHtml(b){
+  if(b.status === "tersedia"){
+    return `<span class="stempel tersedia">Tersedia</span>`;
+  }
+  return `<span class="stempel dipinjam">Dipinjam</span>`;
+}
+
+function kartuHtml(b){
+  return `
+  <div class="kartu" data-id="${b.id}">
+    <span class="lubang l"></span><span class="lubang r"></span>
+    <div class="garis-panduan">
+      <div>
+        <p class="judul-buku">${b.judul}</p>
+        <p class="penulis">${b.penulis} · ${b.tahun}</p>
+      </div>
+      <span class="no-panggil">${b.callNumber}</span>
+    </div>
+    <div class="meta-row"><span>${b.genre}</span>${b.custom ? '<span>· Ditambahkan</span>' : ''}</div>
+    <p class="sinopsis-ringkas">${b.sinopsis.slice(0,110)}${b.sinopsis.length>110?'…':''}</p>
+    <div class="kartu-footer">
+      <span class="lokasi-badge">Lt.${b.lantai} · Rak ${b.rak}</span>
+      ${stempelHtml(b)}
+    </div>
+  </div>`;
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  const daftar = bukuTersaring();
+  document.getElementById('resultCount').textContent = daftar.length + " buku ditemukan";
+  if(daftar.length === 0){
+    grid.innerHTML = `<div class="no-result">Tidak ada buku yang cocok. Coba kata kunci lain.</div>`;
+    return;
+  }
+  grid.innerHTML = daftar.map(kartuHtml).join("");
+  grid.querySelectorAll('.kartu').forEach(el => {
+    el.addEventListener('click', () => bukaDetail(el.dataset.id));
+  });
+}
+
+function petaLokasiHtml(b){
+  const lantaiList = [1,2,3];
+  const namaArea = {1:"Umum & Referensi", 2:"Fiksi & Sastra", 3:"Sains & Teknologi"};
+  return `<div class="peta">` + lantaiList.map(l => `
+    <div class="lantai-bar ${l === b.lantai ? 'aktif' : ''}">
+      <span>Lantai ${l} — ${namaArea[l]}</span>
+      ${l === b.lantai ? `<span class="rak-pill">Rak ${b.rak}</span>` : ''}
+    </div>`).join("") + `</div>`;
+}
+
+function bukaDetail(id){
+  const b = BUKU.find(x => x.id === id);
+  if(!b) return;
+  const ketersediaanText = b.status === "tersedia"
+    ? `${b.eksemplar.tersedia} dari ${b.eksemplar.total} eksemplar tersedia di rak`
+    : `Semua eksemplar sedang dipinjam · perkiraan kembali ${b.kembali}`;
+  document.getElementById('detailKartu').innerHTML = `
+    <button class="tutup-btn" id="tutupDetail" aria-label="Tutup">&times;</button>
+    <span class="lubang l"></span><span class="lubang r"></span>
+    <div class="detail-top">
+      <span class="no-panggil">${b.callNumber}</span>
+      <h2>${b.judul}</h2>
+      <p class="penulis">${b.penulis} · terbit ${b.tahun}</p>
+      <div class="detail-meta">
+        <span>${b.genre}</span>
+        <span>Lantai ${b.lantai}, Rak ${b.rak}</span>
+      </div>
+    </div>
+    <div class="detail-section-title">Sinopsis</div>
+    <p class="sinopsis-full">${b.sinopsis}</p>
+    <div class="detail-section-title">Peta lokasi</div>
+    ${petaLokasiHtml(b)}
+    <div class="ketersediaan-box">
+      ${stempelHtml(b)}
+      <span style="font-size:13px;color:var(--muted);">${ketersediaanText}</span>
+    </div>
+    <button class="tanya-ai-btn" id="tanyaTentangIni">Tanya AI tentang buku ini</button>
+  `;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('tutupDetail').onclick = tutupDetail;
+  document.getElementById('tanyaTentangIni').onclick = () => {
+    tutupDetail();
+    bukaAiPanel();
+    kirimPertanyaan(`Ceritakan lebih lanjut tentang buku "${b.judul}" dan di mana saya bisa menemukannya.`);
+  };
+}
+function tutupDetail(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', (e) => {
+  if(e.target.id === 'overlay') tutupDetail();
+});
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  queryAktif = e.target.value;
+  renderGrid();
+});
+
+renderChips();
+renderGrid();
+
+/* ---------- Form tambah buku ---------- */
+const formOverlay = document.getElementById('formOverlay');
+const formTambah = document.getElementById('formTambah');
+const formStatusMsg = document.getElementById('formStatusMsg');
+
+function isiDatalistGenre(){
+  const dl = document.getElementById('genreList');
+  dl.innerHTML = semuaGenre().filter(g => g !== "Semua").map(g => `<option value="${g}"></option>`).join("");
+}
+
+function bukaFormTambah(){
+  formTambah.reset();
+  document.getElementById('in-eksemplar').value = 1;
+  formStatusMsg.classList.remove('show');
+  ['f-judul','f-penulis','f-tahun','f-genre','f-rak'].forEach(id => {
+    document.getElementById(id).classList.remove('invalid');
+    document.getElementById(id).querySelector('.field-error').classList.remove('show');
+  });
+  isiDatalistGenre();
+  formOverlay.classList.add('show');
+  document.getElementById('in-judul').focus();
+}
+function tutupFormTambah(){ formOverlay.classList.remove('show'); }
+
+document.getElementById('tambahBukuBtn').addEventListener('click', bukaFormTambah);
+document.getElementById('tutupForm').addEventListener('click', tutupFormTambah);
+document.getElementById('batalForm').addEventListener('click', tutupFormTambah);
+formOverlay.addEventListener('click', (e) => { if(e.target.id === 'formOverlay') tutupFormTambah(); });
+
+function tandaiError(fieldId, valid){
+  const el = document.getElementById(fieldId);
+  el.classList.toggle('invalid', !valid);
+  const err = el.querySelector('.field-error');
+  if(err) err.classList.toggle('show', !valid);
+}
+
+formTambah.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const judul = document.getElementById('in-judul').value.trim();
+  const penulis = document.getElementById('in-penulis').value.trim();
+  const tahunStr = document.getElementById('in-tahun').value.trim();
+  const genre = document.getElementById('in-genre').value.trim();
+  const lantai = parseInt(document.getElementById('in-lantai').value, 10);
+  const rak = document.getElementById('in-rak').value.trim();
+  const callNumberInput = document.getElementById('in-call').value.trim();
+  const status = document.getElementById('in-status').value;
+  const eksemplarStr = document.getElementById('in-eksemplar').value.trim();
+  const sinopsis = document.getElementById('in-sinopsis').value.trim();
+
+  let valid = true;
+  const judulValid = judul.length > 0;
+  tandaiError('f-judul', judulValid); valid = valid && judulValid;
+  const penulisValid = penulis.length > 0;
+  tandaiError('f-penulis', penulisValid); valid = valid && penulisValid;
+  const genreValid = genre.length > 0;
+  tandaiError('f-genre', genreValid); valid = valid && genreValid;
+  const rakValid = rak.length > 0;
+  tandaiError('f-rak', rakValid); valid = valid && rakValid;
+  const tahunNum = tahunStr === "" ? new Date().getFullYear() : parseInt(tahunStr, 10);
+  const tahunValid = tahunStr === "" || (!isNaN(tahunNum) && tahunNum > 0 && tahunNum <= 2100);
+  tandaiError('f-tahun', tahunValid); valid = valid && tahunValid;
+
+  if(!valid) return;
+
+  const eksemplarTotal = Math.max(1, parseInt(eksemplarStr, 10) || 1);
+  const idBaru = buatIdBaru();
+  const bukuBaru = {
+    id: idBaru,
+    judul, penulis,
+    tahun: tahunNum,
+    genre,
+    lantai,
+    area: namaAreaLantai(lantai),
+    rak,
+    callNumber: callNumberInput || (lantai + "00/" + penulis.slice(0,3).toUpperCase() + "/" + judul.slice(0,1).toLowerCase()),
+    status,
+    kembali: status === "dipinjam" ? "Belum ditentukan" : undefined,
+    eksemplar: { total: eksemplarTotal, tersedia: status === "tersedia" ? eksemplarTotal : 0 },
+    sinopsis: sinopsis || "Belum ada sinopsis untuk buku ini.",
+    custom: true
+  };
+
+  BUKU.push(bukuBaru);
+  simpanBukuTambahan();
+  renderChips();
+  renderGrid();
+
+  formStatusMsg.classList.add('show');
+  setTimeout(() => { tutupFormTambah(); }, 900);
+});
+
+/* ---------- Panel Pustakawan AI ---------- */
+const aiToggle = document.getElementById('aiToggle');
+const aiPanel = document.getElementById('aiPanel');
+const aiMessages = document.getElementById('aiMessages');
+const aiInput = document.getElementById('aiInput');
+const aiSend = document.getElementById('aiSend');
+
+function bukaAiPanel(){
+  aiPanel.classList.add('show');
+  aiInput.focus();
+}
+aiToggle.addEventListener('click', bukaAiPanel);
+document.getElementById('aiClose').addEventListener('click', () => aiPanel.classList.remove('show'));
+aiInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') kirimPertanyaan(); });
+aiSend.addEventListener('click', () => kirimPertanyaan());
+
+function tambahPesan(teks, peran){
+  const div = document.createElement('div');
+  div.className = "msg " + peran;
+  div.textContent = teks;
+  aiMessages.appendChild(div);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+  return div;
+}
+
+function tambahRekomendasi(idList){
+  if(!idList || idList.length === 0) return;
+  const wrap = document.createElement('div');
+  wrap.className = "msg ai";
+  const list = document.createElement('div');
+  list.className = "rekomendasi-list";
+  idList.forEach(id => {
+    const b = BUKU.find(x => x.id === id);
+    if(!b) return;
+    const item = document.createElement('div');
+    item.className = "rekomendasi-item";
+    item.textContent = `${b.judul} — Lt.${b.lantai} Rak ${b.rak}`;
+    item.onclick = () => { aiPanel.classList.remove('show'); bukaDetail(b.id); };
+    list.appendChild(item);
+  });
+  wrap.appendChild(list);
+  aiMessages.appendChild(wrap);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+}
+
+function pencarianLokalFallback(q){
+  const kata = q.toLowerCase();
+  const cocok = BUKU.filter(b => (b.judul+" "+b.penulis+" "+b.genre+" "+b.sinopsis).toLowerCase().includes(kata) ||
+    kata.split(/\s+/).some(k => k.length > 3 && (b.judul+" "+b.genre+" "+b.sinopsis).toLowerCase().includes(k)));
+  if(cocok.length === 0){
+    return {jawaban: "Belum menemukan buku yang cocok dengan pertanyaan itu di katalog. Coba gunakan kata kunci lain, misalnya genre atau nama penulis.", rekomendasi_id: []};
+  }
+  const teratas = cocok.slice(0,3);
+  const daftarTeks = teratas.map(b => `"${b.judul}" (${b.penulis}) di Lantai ${b.lantai}, Rak ${b.rak}`).join("; ");
+  return {jawaban: `Berdasarkan katalog, ini beberapa buku yang relevan: ${daftarTeks}.`, rekomendasi_id: teratas.map(b => b.id)};
+}
+
+async function kirimPertanyaan(preset){
+  const pertanyaan = (typeof preset === 'string' ? preset : aiInput.value).trim();
+  if(!pertanyaan) return;
+  if(typeof preset !== 'string') aiInput.value = "";
+  tambahPesan(pertanyaan, "user");
+  aiSend.disabled = true;
+  const typingEl = document.createElement('div');
+  typingEl.className = "ai-typing";
+  typingEl.textContent = "Pustakawan sedang mencari…";
+  aiMessages.appendChild(typingEl);
+  aiMessages.scrollTop = aiMessages.scrollHeight;
+
+  const katalogRingkas = BUKU.map(b => ({
+    id:b.id, judul:b.judul, penulis:b.penulis, tahun:b.tahun, genre:b.genre,
+    lantai:b.lantai, area:b.area, rak:b.rak, status:b.status,
+    kembali: b.kembali || null, sinopsis:b.sinopsis
+  }));
+
+  const systemPrompt = `Kamu adalah pustakawan AI ramah di sebuah perpustakaan. Kamu HANYA boleh menjawab berdasarkan data katalog berikut, jangan mengarang buku atau lokasi yang tidak ada di data ini:
+${JSON.stringify(katalogRingkas)}
+
+Jawab dalam Bahasa Indonesia, singkat (maksimal 3 kalimat), ramah, dan sertakan lantai serta nomor rak bila relevan. Jika tidak ada buku yang cocok di data, katakan dengan jujur bahwa katalog belum memiliki buku itu.
+Balas HANYA dalam format JSON valid tanpa markdown, tanpa teks lain, persis seperti ini:
+{"jawaban": "teks jawabanmu di sini", "rekomendasi_id": ["id_buku1", "id_buku2"]}
+rekomendasi_id berisi 0 sampai 3 id buku dari data di atas yang paling relevan dengan pertanyaan.`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{role:"user", content: pertanyaan}]
+      })
+    });
+    const data = await response.json();
+    let teksMentah = (data.content || []).map(c => c.text || "").join("").trim();
+    teksMentah = teksMentah.replace(/```json|```/g, "").trim();
+    let hasil;
+    try{
+      hasil = JSON.parse(teksMentah);
+    }catch(e){
+      hasil = pencarianLokalFallback(pertanyaan);
+    }
+    typingEl.remove();
+    tambahPesan(hasil.jawaban || "Maaf, belum ada jawaban yang bisa diberikan.", "ai");
+    tambahRekomendasi(hasil.rekomendasi_id);
+  }catch(err){
+    typingEl.remove();
+    const fallback = pencarianLokalFallback(pertanyaan);
+    tambahPesan(fallback.jawaban, "ai");
+    tambahRekomendasi(fallback.rekomendasi_id);
+  }finally{
+    aiSend.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
